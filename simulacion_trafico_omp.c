@@ -155,12 +155,12 @@ void mover_vehiculos(Vehiculo *v, int n_veh, const Semaforo *sem_snapshot, int n
 }
 // -------------------- Bucle de simulación --------------------
 void imprimir_estado(const Vehiculo *v, int n_veh, const Semaforo *s, int n_sem, int iter) {
-    printf("\nIteración %d\n", iter + 1);
+    printf("\nIteracion %d\n", iter + 1);
     for (int i = 0; i < n_veh; i++) {
-        printf("Vehículo %2d - Posición: %d\n", v[i].id, v[i].pos);
+        printf("Vehiculo %2d - Posicion: %d\n", v[i].id, v[i].pos);
     }
     for (int j = 0; j < n_sem; j++) {
-        printf("Semáforo %d - Estado: %s\n", s[j].id, estado_to_str(s[j].estado));
+        printf("Semaforo %d - Estado: %s\n", s[j].id, estado_to_str(s[j].estado));
     }
 }
 
@@ -259,11 +259,11 @@ int main(int argc, char **argv) {
     inicializar_vehiculos(veh, n_veh, road, seed);
     inicializar_semaforos(sem, n_sem, road, ciclo);
 
-    printf("Simulación de tráfico con OpenMP\n");
-    printf("Vehículos: %d | Semáforos: %d | Iteraciones: %d | Largo: %d | Hilos dinámicos ON\n",
+    printf("Simulacion de trafico con OpenMP\n");
+    printf("Vehiculos: %d | Semaforos: %d | Iteraciones: %d | Largo: %d | Hilos dinamicos ON\n",
            n_veh, n_sem, iters, road);
-    printf("Secciones paralelas: %s | Delay: %d s | Ciclo semáforo: %d ticks\n",
-           usar_secciones ? "Sí" : "No", delay, ciclo);
+    printf("Secciones paralelas: %s | Delay: %d s | Ciclo semaforo: %d ticks\n",
+           usar_secciones ? "Si" : "No", delay, ciclo);
 
     // Ejecuta la versión dinámica (paso 6). La simple queda disponible si la prefieres.
     simular_dinamico(iters, veh, n_veh, sem, n_sem, road, delay, usar_secciones);
