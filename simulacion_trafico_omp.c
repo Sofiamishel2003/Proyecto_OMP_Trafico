@@ -122,7 +122,7 @@ void actualizar_semaforos(Semaforo *s, int n) {
         }
     }
 }
-// -------------------- Paso 4: Vehículos (lógica de movimiento) --------------------
+// -------------------- Vehículos (lógica de movimiento) --------------------
 // Regla simple: un vehículo avanza hasta su vel_max salvo que el siguiente semáforo
 // por delante esté en ROJO o AMARILLO exactamente en su posición destino (o antes).
 // Para robustez un "stop range" = 0 (la celda del semáforo).
@@ -181,6 +181,47 @@ void simular_simple(int iteraciones, Vehiculo *v, int n_veh, Semaforo *s, int n_
         // Mostrar estado
         imprimir_estado(v, n_veh, s, n_sem, i);
 
+        if (delay_seg > 0) SLEEP_SEC(delay_seg);
+    }
+}
+// -------------------- Ajuste dinámico de hilos --------------------
+void simular_dinamico(int iteraciones, Vehiculo *v, int n_veh, Semaforo *s, int n_sem, int road_len, int delay_seg, int usar_secciones) {
+    omp_set_dynamic(1); // permitir ajuste dinámico
+    for (int i = 0; i < iteraciones; i++) {
+        // Heurística: 1 hilo por 8 vehículos + 1 por cada 4 semáforos, mínimo 2
+        int hilos = (n_veh + 7) / 8 + (n_sem + 3) / 4;
+        if (hilos < 2) hilos = 2;
+        omp_set_num_threads(hilos);
+
+        if (usar_secciones) {
+            // Snapshot previo para que la sección de "mover" lea un estado consistente
+            Semaforo *snap = (Semaforo*)malloc(sizeof(Semaforo) * n_sem);
+            memcpy(snap, s, sizeof(Semaforo) * n_sem);
+
+            #pragma omp parallel sections
+            {
+                #pragma omp section
+                {
+                    actualizar_semaforos(s, n_sem);
+                }
+                #pragma omp section
+                {
+                    mover_vehiculos(v, n_veh, snap, n_sem, road_len);
+                }
+            }
+            free(snap);
+        } else {
+            // Secuencial por iteración (pero cada tarea interna está paralelizada)
+            actualizar_semaforos(s, n_sem);
+
+            Semaforo *snap = (Semaforo*)malloc(sizeof(Semaforo) * n_sem);
+            memcpy(snap, s, sizeof(Semaforo) * n_sem);
+
+            mover_vehiculos(v, n_veh, snap, n_sem, road_len);
+            free(snap);
+        }
+
+        imprimir_estado(v, n_veh, s, n_sem, i);
         if (delay_seg > 0) SLEEP_SEC(delay_seg);
     }
 }
