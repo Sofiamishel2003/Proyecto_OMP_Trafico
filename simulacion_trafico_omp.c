@@ -153,3 +153,34 @@ void mover_vehiculos(Vehiculo *v, int n_veh, const Semaforo *sem_snapshot, int n
         } // si no puede, se queda en su lugar
     }
 }
+// -------------------- Bucle de simulación --------------------
+void imprimir_estado(const Vehiculo *v, int n_veh, const Semaforo *s, int n_sem, int iter) {
+    printf("\nIteración %d\n", iter + 1);
+    for (int i = 0; i < n_veh; i++) {
+        printf("Vehículo %2d - Posición: %d\n", v[i].id, v[i].pos);
+    }
+    for (int j = 0; j < n_sem; j++) {
+        printf("Semáforo %d - Estado: %s\n", s[j].id, estado_to_str(s[j].estado));
+    }
+}
+
+void simular_simple(int iteraciones, Vehiculo *v, int n_veh, Semaforo *s, int n_sem, int road_len, int delay_seg) {
+    for (int i = 0; i < iteraciones; i++) {
+        // Actualizar semáforos
+        actualizar_semaforos(s, n_sem);
+
+        // Snapshot de semáforos para que el movimiento lea un estado estable
+        Semaforo *snap = (Semaforo*)malloc(sizeof(Semaforo) * n_sem);
+        memcpy(snap, s, sizeof(Semaforo) * n_sem);
+
+        // Mover vehículos
+        mover_vehiculos(v, n_veh, snap, n_sem, road_len);
+
+        free(snap);
+
+        // Mostrar estado
+        imprimir_estado(v, n_veh, s, n_sem, i);
+
+        if (delay_seg > 0) SLEEP_SEC(delay_seg);
+    }
+}
