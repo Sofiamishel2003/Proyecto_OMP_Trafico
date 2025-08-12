@@ -94,3 +94,31 @@ void inicializar_semaforos(Semaforo *s, int n, int road_len, int ciclo_total) {
     }
 }
 
+// -------------------- Semáforos --------------------
+static inline EstadoSemaforo siguiente_estado(const Semaforo *s) {
+    switch (s->estado) {
+        case VERDE:    return AMARILLO;
+        case AMARILLO: return ROJO;
+        case ROJO:     return VERDE;
+        default:       return ROJO;
+    }
+}
+
+void actualizar_semaforos(Semaforo *s, int n) {
+    // Paralelizar por semáforo
+    #pragma omp parallel for schedule(static)
+    for (int i = 0; i < n; i++) {
+        s[i].t_en_estado++;
+        int limite = 0;
+        switch (s[i].estado) {
+            case VERDE:    limite = s[i].dur_verde;    break;
+            case AMARILLO: limite = s[i].dur_amarillo; break;
+            case ROJO:     limite = s[i].dur_rojo;     break;
+            default:       limite = 1;                 break;
+        }
+        if (s[i].t_en_estado >= limite) {
+            s[i].estado = siguiente_estado(&s[i]);
+            s[i].t_en_estado = 0;
+        }
+    }
+}
