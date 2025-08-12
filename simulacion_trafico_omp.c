@@ -225,3 +225,50 @@ void simular_dinamico(int iteraciones, Vehiculo *v, int n_veh, Semaforo *s, int 
         if (delay_seg > 0) SLEEP_SEC(delay_seg);
     }
 }
+// -------------------- Main, pruebas y opciones --------------------
+static void uso(const char *prog) {
+    fprintf(stderr,
+        "Uso: %s <vehiculos> <semaforos> <iteraciones> <largo_carretera> [delay_seg=0] [ciclo_semaforo=9] [usar_secciones=1] [seed]\n"
+        "Ej:  %s 20 4 5 100 0 9 1 42\n",
+        prog, prog
+    );
+}
+
+int main(int argc, char **argv) {
+    if (argc < 5) {
+        uso(argv[0]);
+        return 1;
+    }
+    int n_veh  = atoi(argv[1]);
+    int n_sem  = atoi(argv[2]);
+    int iters  = atoi(argv[3]);
+    int road   = atoi(argv[4]);
+    int delay  = (argc > 5) ? atoi(argv[5]) : 0;
+    int ciclo  = (argc > 6) ? atoi(argv[6]) : 9; // verde 50%, amarillo 20%, rojo resto
+    int usar_secciones = (argc > 7) ? atoi(argv[7]) : 1;
+    unsigned int seed  = (argc > 8) ? (unsigned int)strtoul(argv[8], NULL, 10) : (unsigned int)time(NULL);
+
+    if (n_veh <= 0 || n_sem <= 0 || iters <= 0 || road <= 2) {
+        uso(argv[0]);
+        return 1;
+    }
+
+    Vehiculo *veh = (Vehiculo*)malloc(sizeof(Vehiculo) * n_veh);
+    Semaforo *sem = (Semaforo*)malloc(sizeof(Semaforo) * n_sem);
+
+    inicializar_vehiculos(veh, n_veh, road, seed);
+    inicializar_semaforos(sem, n_sem, road, ciclo);
+
+    printf("Simulación de tráfico con OpenMP\n");
+    printf("Vehículos: %d | Semáforos: %d | Iteraciones: %d | Largo: %d | Hilos dinámicos ON\n",
+           n_veh, n_sem, iters, road);
+    printf("Secciones paralelas: %s | Delay: %d s | Ciclo semáforo: %d ticks\n",
+           usar_secciones ? "Sí" : "No", delay, ciclo);
+
+    // Ejecuta la versión dinámica (paso 6). La simple queda disponible si la prefieres.
+    simular_dinamico(iters, veh, n_veh, sem, n_sem, road, delay, usar_secciones);
+
+    free(veh);
+    free(sem);
+    return 0;
+}
