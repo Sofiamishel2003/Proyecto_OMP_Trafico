@@ -122,3 +122,34 @@ void actualizar_semaforos(Semaforo *s, int n) {
         }
     }
 }
+// -------------------- Paso 4: Vehículos (lógica de movimiento) --------------------
+// Regla simple: un vehículo avanza hasta su vel_max salvo que el siguiente semáforo
+// por delante esté en ROJO o AMARILLO exactamente en su posición destino (o antes).
+// Para robustez un "stop range" = 0 (la celda del semáforo).
+// Btw usamos snapshot de semáforos para evitar leer mientras se actualizan.
+void mover_vehiculos(Vehiculo *v, int n_veh, const Semaforo *sem_snapshot, int n_sem, int road_len) {
+    #pragma omp parallel for schedule(static)
+    for (int i = 0; i < n_veh; i++) {
+        int pos_actual = v[i].pos;
+        int paso = v[i].vel_max;
+        int puede_mover = 1;
+
+        // Calcular posición destino tentativa
+        int destino = mod_pos(pos_actual + paso, road_len);
+
+        // Verificar semáforo en destino
+        for (int j = 0; j < n_sem; j++) {
+            // Si hay semáforo justo en la celda de destino y no está VERDE, detente
+            if (sem_snapshot[j].pos == destino) {
+                if (sem_snapshot[j].estado == ROJO || sem_snapshot[j].estado == AMARILLO) {
+                    puede_mover = 0;
+                }
+                break;
+            }
+        }
+
+        if (puede_mover) {
+            v[i].pos = destino;
+        } // si no puede, se queda en su lugar
+    }
+}
