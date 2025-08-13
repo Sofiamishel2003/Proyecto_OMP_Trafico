@@ -103,6 +103,7 @@ static inline EstadoSemaforo siguiente_estado(const Semaforo *s) {
 }
 
 void actualizar_semaforos(Semaforo *s, int n) {
+    // Paralelizar por semáforo
     for (int i = 0; i < n; i++) {
         s[i].t_en_estado++;
         int limite = 0;
@@ -179,32 +180,6 @@ void simular_simple(int iteraciones, Vehiculo *v, int n_veh, Semaforo *s, int n_
         if (delay_seg > 0) SLEEP_SEC(delay_seg);
     }
 }
-// -------------------- Ajuste dinámico de hilos --------------------
-void simular_secuencial(int iteraciones, Vehiculo *v, int n_veh, Semaforo *s, int n_sem, int road_len, int delay_seg, int usar_secciones) {
-    for (int i = 0; i < iteraciones; i++) {
-
-        if (usar_secciones) {
-            // Snapshot previo para que la sección de "mover" lea un estado consistente
-            Semaforo *snap = (Semaforo*)malloc(sizeof(Semaforo) * n_sem);
-            memcpy(snap, s, sizeof(Semaforo) * n_sem);
-            actualizar_semaforos(s, n_sem);
-            mover_vehiculos(v, n_veh, snap, n_sem, road_len);
-            free(snap);
-        } else {
-            // Secuencial por iteración (pero cada tarea interna está paralelizada)
-            actualizar_semaforos(s, n_sem);
-
-            Semaforo *snap = (Semaforo*)malloc(sizeof(Semaforo) * n_sem);
-            memcpy(snap, s, sizeof(Semaforo) * n_sem);
-
-            mover_vehiculos(v, n_veh, snap, n_sem, road_len);
-            free(snap);
-        }
-
-        imprimir_estado(v, n_veh, s, n_sem, i);
-        if (delay_seg > 0) SLEEP_SEC(delay_seg);
-    }
-}
 // -------------------- Main, pruebas y opciones --------------------
 static void uso(const char *prog) {
     fprintf(stderr,
@@ -239,14 +214,16 @@ int main(int argc, char **argv) {
     inicializar_vehiculos(veh, n_veh, road, seed);
     inicializar_semaforos(sem, n_sem, road, ciclo);
 
-    printf("Simulacion de trafico\n");
-    printf("Vehiculos: %d | Semaforos: %d | Iteraciones: %d | Largo: %d | Hilos dinamicos OFF\n",
+    printf("Simulacion de trafico con OpenMP\n");
+    printf("Vehiculos: %d | Semaforos: %d | Iteraciones: %d | Largo: %d | Hilos dinamicos OFFS\n",
            n_veh, n_sem, iters, road);
+    printf("Secciones paralelas: %s | Delay: %d s | Ciclo semaforo: %d ticks\n",
+           usar_secciones ? "Si" : "No", delay, ciclo);
 
     double t0 = omp_get_wtime();
-    simular_secuencial(iters, veh, n_veh, sem, n_sem, road, delay, usar_secciones);
+    simular_simple(iters, veh, n_veh, sem, n_sem, road, delay);
     double t1 = omp_get_wtime();
-    printf("Tiempo de simulacion secuencial: %.2f segundos\n", t1 - t0);
+    printf("Tiempo de simulacion secuencial: %.6f segundos\n", t1 - t0);
     free(veh);
     free(sem);
     return 0;

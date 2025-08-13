@@ -187,12 +187,8 @@ void simular_simple(int iteraciones, Vehiculo *v, int n_veh, Semaforo *s, int n_
 // -------------------- Ajuste dinámico de hilos --------------------
 void simular_dinamico(int iteraciones, Vehiculo *v, int n_veh, Semaforo *s, int n_sem, int road_len, int delay_seg, int usar_secciones) {
     omp_set_dynamic(1); // permitir ajuste dinámico
+    omp_set_num_threads(8);
     for (int i = 0; i < iteraciones; i++) {
-        // Heurística: 1 hilo por 8 vehículos + 1 por cada 4 semáforos, mínimo 2
-        int hilos = (n_veh + 7) / 8 + (n_sem + 3) / 4;
-        if (hilos < 2) hilos = 2;
-        omp_set_num_threads(hilos);
-
         if (usar_secciones) {
             // Snapshot previo para que la sección de "mover" lea un estado consistente
             Semaforo *snap = (Semaforo*)malloc(sizeof(Semaforo) * n_sem);
@@ -268,7 +264,7 @@ int main(int argc, char **argv) {
     double t0 = omp_get_wtime();
     simular_dinamico(iters, veh, n_veh, sem, n_sem, road, delay, usar_secciones);
     double t1 = omp_get_wtime();
-    printf("Tiempo de simulacion: %.2f segundos\n", t1 - t0);
+    printf("Tiempo de simulacion: %.6f segundos\n", t1 - t0);
     free(veh);
     free(sem);
     return 0;
