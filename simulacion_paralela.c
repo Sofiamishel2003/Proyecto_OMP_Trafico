@@ -265,9 +265,10 @@ int main(int argc, char **argv) {
     printf("Secciones paralelas: %s | Delay: %d s | Ciclo semaforo: %d ticks\n",
            usar_secciones ? "Si" : "No", delay, ciclo);
 
-    // Ejecuta la versión dinámica (paso 6). La simple queda disponible si la prefieres.
+    double t0 = omp_get_wtime();
     simular_dinamico(iters, veh, n_veh, sem, n_sem, road, delay, usar_secciones);
-
+    double t1 = omp_get_wtime();
+    printf("Tiempo de simulacion: %.2f segundos\n", t1 - t0);
     free(veh);
     free(sem);
     return 0;
